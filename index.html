@@ -647,7 +647,38 @@
     80%{ clip-path:inset(100% 0 0 0); }
     100%{ clip-path:inset(100% 0 0 0); }
   }
+  /* ---------- CARIMBO "INGRESSO GARANTIDO" ---------- */
+  .stub-stamp{
+    position:absolute;
+    left:50%; top:38%;
+    z-index:4;
+    font-family:'Permanent Marker', cursive;
+    font-size:15px;
+    line-height:1.05;
+    text-align:center;
+    text-transform:uppercase;
+    color:var(--rock-red);
+    border:2.5px solid var(--rock-red);
+    border-radius:7px;
+    padding:10px 16px;
+    background:#241F17;
+    box-shadow:0 10px 24px rgba(0,0,0,0.55);
+    white-space:nowrap;
+    transform:translate(-50%,-50%) rotate(-13deg) scale(1.9);
+    opacity:0;
+    pointer-events:none;
+  }
+  .ticket.tearing .stub-stamp{ animation:stampIn 2s ease both; }
+  @keyframes stampIn{
+    0%, 24%{ opacity:0; transform:translate(-50%,-50%) rotate(-13deg) scale(1.9); }
+    33%{ opacity:1; transform:translate(-50%,-50%) rotate(-13deg) scale(1); }
+    38%{ transform:translate(-50%,-50%) rotate(-13deg) scale(1.07); }
+    44%, 74%{ opacity:1; transform:translate(-50%,-50%) rotate(-13deg) scale(1); }
+    100%{ opacity:0; transform:translate(-50%,-50%) rotate(-13deg) scale(1); }
+  }
+
   @media (prefers-reduced-motion: reduce){
+    .ticket.tearing .stub-stamp,
     .ticket.tearing,
     .ticket.tearing .ticket-stub,
     .ticket.tearing .tear-edge-mask,
@@ -1224,6 +1255,7 @@
         </div>
         <div class="ticket-stub">
           <div class="tear-edge-mask" aria-hidden="true"><div class="tear-edge"></div></div>
+          <span class="stub-stamp" aria-hidden="true">Ingresso<br>garantido</span>
           <div class="stub-row"><span>Banda</span><b>Canoa Rock</b></div>
           <div class="stub-row"><span>Estilo</span><b>Rock nacional & Pop Rock</b></div>
           <div class="stub-row"><span>Formato</span><b>Elétrico ou acústico</b></div>
@@ -1543,12 +1575,36 @@
     var ticketEl = document.querySelector('.ticket');
     var ticketBtn = document.querySelector('.ticket-cta-btn');
     if(!ticketEl || !ticketBtn) return;
-    ticketBtn.addEventListener('click', function(){
-      if(reduced) return;
+
+    var OPEN_DELAY = 1350;   // deixa o canhoto rasgar e o carimbo bater antes de sair
+    var RESET_DELAY = 2100;  // duração total da animação
+    var busy = false;
+
+    ticketBtn.addEventListener('click', function(e){
+      if(reduced) return;   // sem animação: vai direto pro WhatsApp
+      if(busy){ e.preventDefault(); return; }
+      e.preventDefault();
+      busy = true;
+
+      var url = ticketBtn.href;
+      var label = ticketBtn.textContent;
+
       ticketEl.classList.remove('tearing');
       void ticketEl.offsetWidth; // restart animation cleanly on repeat clicks
       ticketEl.classList.add('tearing');
-      window.setTimeout(function(){ ticketEl.classList.remove('tearing'); }, 2100);
+      ticketBtn.textContent = 'Ingresso garantido…';
+
+      window.setTimeout(function(){
+        var win = window.open(url, '_blank');
+        if(win){ try{ win.opener = null; }catch(err){} }
+        else { window.location.href = url; }
+      }, OPEN_DELAY);
+
+      window.setTimeout(function(){
+        ticketEl.classList.remove('tearing');
+        ticketBtn.textContent = label;
+        busy = false;
+      }, RESET_DELAY);
     });
   })();
 </script>
